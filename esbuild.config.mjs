@@ -10,7 +10,10 @@ If you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = process.argv[2] === 'production';
-const outDir = prod ? 'dist' : '../.obsidian/plugins/obsidian-granola';
+// Update this path to point to your actual Obsidian vault
+const outDir = prod 
+  ? 'dist' 
+  : '/Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola';
 
 // Make sure the output directory exists
 if (!fs.existsSync(outDir)) {

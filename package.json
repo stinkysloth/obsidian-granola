@@ -6,11 +6,11 @@
   "scripts": {
     "build": "node esbuild.config.mjs production",
     "dev": "node esbuild.config.mjs",
-    "clean": "rm -rf ../obsidian/plugins/obsidian-granola/* || true",
-    "clean:dev": "rm -rf ../.obsidian/plugins/obsidian-granola/* || true",
+    "clean": "rm -rf /Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola/* || true",
+    "clean:dev": "rm -rf /Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola/* || true",
     "dev:clean": "npm run clean:dev && npm run dev",
     "deploy": "npm run build && npm run copy-to-vault",
-    "copy-to-vault": "cp dist/*.js ../.obsidian/plugins/obsidian-granola/ && cp manifest.json ../.obsidian/plugins/obsidian-granola/manifest.json && cp styles.css ../.obsidian/plugins/obsidian-granola/styles.css || true",
+    "copy-to-vault": "cp dist/*.js /Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola/ && cp manifest.json /Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola/manifest.json && cp styles.css /Users/llama/Documents/Personal/.obsidian/plugins/obsidian-granola/styles.css || true",
     "test": "vitest"
   },
   "author": "",
