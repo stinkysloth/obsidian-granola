@@ -10,6 +10,7 @@
 - Add more robust mock classes for testing type compatibility
 - Review and update tsconfig.json when upgrading TypeScript or Obsidian API versions
 - Use esbuild for bundling instead of just TypeScript compilation to avoid module resolution issues
+- Always use a clean build process to prevent conflicts between compiled files and bundled files
 
 ## Completed Tasks
 - [x] Scaffold project structure and planning docs (2025-04-16)
@@ -17,3 +18,4 @@
 - [x] Fix TypeScript build configuration for proper module resolution (2025-04-17)
 - [x] Fix import order in AIGenerator.ts (2025-04-17)
 - [x] Implement proper module bundling with esbuild to fix module resolution errors (2025-04-17)
+- [x] Implement clean build process to prevent conflicts between compiled files (2025-04-17)
