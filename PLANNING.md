@@ -63,9 +63,10 @@ obsidian-granola/
 ---
 
 ## TODO
-- [ ] Scaffold core files
-- [ ] Implement command: Start New Meeting
-- [ ] Audio recording interface
+- [x] Scaffold core files
+- [x] Implement command: Start New Meeting
+- [x] Audio recording interface (meeting capture) – implemented meeting recording with toggle hotkey and dual-track Blackhole support (2025-04-17)
+- [x] Meeting session toggle command: start/stop meeting with one hotkey (2025-04-17)
 - [ ] Transcription wrapper
 - [ ] AI summarization integration
 - [ ] Templating system

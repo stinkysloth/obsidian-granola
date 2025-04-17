@@ -41,6 +41,7 @@ export class MeetingSession {
     this.app = app;
     this.vault = app?.vault;
     this.settings = settings || DEFAULT_SETTINGS;
+    console.log('[Granola] MeetingSession constructed', { hasApp: !!app, settings: this.settings });
   }
 
   /**
@@ -59,6 +60,7 @@ export class MeetingSession {
   async createNoteFromTemplate(title: string, template: string, audioPath: string): Promise<string> {
     if (!this.app || !this.vault) {
       new Notice('Granola: Obsidian app context required to create note.');
+      console.error('[Granola] Cannot create note: missing app or vault context');
       throw new Error('Obsidian app context required');
     }
     const templatesFolder = this.settings.templateFolder || 'granola-templates';
@@ -73,18 +75,22 @@ export class MeetingSession {
           if (file && file instanceof TFile) {
             templateContent = await this.vault.read(file);
             usedTemplate = true;
+            console.log('[Granola] Loaded template:', template);
           }
         }
         if (!templateContent) {
           new Notice(`Granola: Template '${template}' not found or empty. Using default note structure.`);
+          console.warn(`[Granola] Template '${template}' not found or empty. Using default.`);
         }
       } catch (e) {
         new Notice(`Granola: Error loading template. Using default note structure.`);
+        console.error('[Granola] Error loading template:', e);
       }
     }
     // Fallback to minimal structure if no template used
     if (!usedTemplate || !templateContent) {
       templateContent = `# ${title}\n\n- Date: {{date}}\n- Audio: {{audio_file_path}}\n\n## Notes\n\n## Transcript\n\n## Summary (AI)\n\n## Action Items\n\n## Follow-up Email\n`;
+      console.log('[Granola] Using default note structure');
     }
     // Replace variables
     const dateStr = (window as any).moment
@@ -97,10 +103,19 @@ export class MeetingSession {
     // Create note file
     const notePath = `Granola Meetings/${dateStr.replace(/[: ]/g, '-')}_${title.replace(/\s+/g, '_')}.md`;
     const normalizedPath = normalizePath(notePath);
+    const parentFolderPath = normalizedPath.split('/').slice(0, -1).join('/');
     try {
+      // Ensure parent folder exists
+      let folder = this.vault.getAbstractFileByPath(parentFolderPath);
+      if (!folder) {
+        console.log('[Granola] Parent folder does not exist, creating:', parentFolderPath);
+        await this.vault.createFolder(parentFolderPath);
+      }
       await this.vault.create(normalizedPath, noteContent);
+      console.log('[Granola] Note created at', normalizedPath);
     } catch (e) {
       new Notice(`Granola: Failed to create note at ${normalizedPath}`);
+      console.error('[Granola] Failed to create note:', e, 'Path:', normalizedPath, 'Parent:', parentFolderPath);
       throw e;
     }
     this.notePath = normalizedPath;
@@ -112,15 +127,16 @@ export class MeetingSession {
    */
   async addTimestampedNote(text: string): Promise<void> {
     if (!this.vault || !this.notePath) {
-      new Notice('Granola: Cannot add note, vault or note path missing.');
+      new Notice('Granola: Cannot add note, missing vault or note path.');
+      console.error('[Granola] Cannot add timestamped note: missing vault or notePath');
       return;
     }
     const file = this.vault.getAbstractFileByPath(this.notePath);
     if (!file || !(file instanceof TFile)) {
       new Notice('Granola: Session note file not found.');
+      console.error('[Granola] Session note file not found:', this.notePath);
       return;
     }
-    // Optionally auto-insert timestamp
     let noteLine = text;
     if (this.settings.autoInsertTimestamp) {
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
@@ -135,10 +151,12 @@ export class MeetingSession {
     if (notesSection) {
       const idx = content.indexOf(notesSection[0]) + notesSection[0].length;
       content = content.slice(0, idx) + `\n${noteLine}` + content.slice(idx);
+      console.log('[Granola] Timestamped note added to ## Notes section');
     } else {
       // Fallback: append at end
       content += `\n\n${noteLine}`;
       new Notice('Granola: ## Notes section not found, appending note at end.');
+      console.warn('[Granola] ## Notes section not found, appended at end');
     }
     await this.vault.modify(file, content);
   }
@@ -155,8 +173,10 @@ export class MeetingSession {
         this.settings.enableDualTrack ? systemDevice : '',
         basePath
       );
+      console.log('[Granola] Audio recording started', { micDevice, systemDevice, basePath });
     } catch (e) {
       new Notice('Granola: Error starting audio recording.');
+      console.error('[Granola] Error starting audio recording:', e);
     }
     this.audioFilePath = this.audioRecorder.micFilePath;
     this.systemFilePath = this.audioRecorder.systemFilePath;
@@ -166,6 +186,7 @@ export class MeetingSession {
         await this.createNoteFromTemplate(title, template, this.audioFilePath);
       } catch (e) {
         new Notice('Granola: Error creating note from template.');
+        console.error('[Granola] Error creating note from template:', e);
       }
     }
     // TODO: Show status bar indicator if enabled
@@ -177,26 +198,32 @@ export class MeetingSession {
   async end(language: string): Promise<void> {
     if (!this.vault || !this.notePath) {
       new Notice('Granola: Cannot end session, vault or note path missing.');
+      console.error('[Granola] Cannot end session: missing vault or notePath');
       return;
     }
     const file = this.vault.getAbstractFileByPath(this.notePath);
     if (!file || !(file instanceof TFile)) {
       new Notice('Granola: Session note file not found.');
+      console.error('[Granola] Session note file not found:', this.notePath);
       return;
     }
     try {
       // Stop audio recording
       await this.audioRecorder.stopRecording();
+      console.log('[Granola] Audio recording stopped');
     } catch (e) {
       new Notice('Granola: Error stopping audio recording.');
+      console.error('[Granola] Error stopping audio recording:', e);
     }
     let transcript = '';
     if (this.settings.autoTranscribeOnEnd) {
       try {
         // Transcribe both tracks and merge
         transcript = await this.transcriber.transcribeDualTracks(this.audioFilePath, this.systemFilePath, this.settings.whisperLanguage || language);
+        console.log('[Granola] Transcription complete');
       } catch (e) {
         new Notice('Granola: Error during transcription.');
+        console.error('[Granola] Error during transcription:', e);
       }
     }
     let aiResults = { summary: '', actionItems: '', followupEmail: '' };
@@ -204,8 +231,10 @@ export class MeetingSession {
       // For now, extract notes section as empty string (TODO: parse notes from file)
       const notes = '';
       aiResults = await this.aiGenerator.generateSummary(notes, transcript);
+      console.log('[Granola] AI summary generated');
     } catch (e) {
       new Notice('Granola: Error generating AI summary.');
+      console.error('[Granola] Error generating AI summary:', e);
     }
     // Read note, insert transcript and AI results into appropriate sections
     let content = await this.vault.read(file);
@@ -215,6 +244,7 @@ export class MeetingSession {
     content = this._replaceSection(content, 'Follow-up Email', aiResults.followupEmail);
     await this.vault.modify(file, content);
     new Notice('Granola: Meeting session ended and note updated.');
+    console.log('[Granola] Meeting session ended and note updated');
   }
 
   /**

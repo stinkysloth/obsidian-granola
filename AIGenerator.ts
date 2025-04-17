@@ -27,6 +27,7 @@ export class AIGenerator {
     this.model = model;
     this.fallbackEndpoint = fallbackEndpoint;
     this.fallbackModel = fallbackModel;
+    console.log('[Granola] AIGenerator constructed', { endpoint, model, fallbackEndpoint, fallbackModel });
   }
 
   /**
@@ -45,12 +46,16 @@ export class AIGenerator {
 
     // Helper to call an endpoint
     const callLLM = async (endpoint: string, model: string) => {
+      console.log('[Granola] Calling LLM API:', endpoint);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model, prompt, stream: false })
       });
-      if (!res.ok) throw new Error(`LLM API error: ${res.status}`);
+      if (!res.ok) {
+        console.error('[Granola] LLM API error:', res.status, endpoint);
+        throw new Error(`LLM API error: ${res.status}`);
+      }
       const data = await res.json();
       let parsed;
       try {
@@ -59,7 +64,10 @@ export class AIGenerator {
         // Try to extract JSON substring
         const match = data.response.match(/\{[\s\S]*\}/);
         if (match) parsed = JSON.parse(match[0]);
-        else throw new Error('Could not parse LLM response as JSON');
+        else {
+          console.error('[Granola] Could not parse LLM response as JSON:', data.response);
+          throw new Error('Could not parse LLM response as JSON');
+        }
       }
       return {
         summary: parsed.summary || '',
@@ -70,17 +78,22 @@ export class AIGenerator {
 
     // Try primary endpoint, then fallback if configured
     try {
-      return await callLLM(this.endpoint, this.model);
+      const result = await callLLM(this.endpoint, this.model);
+      console.log('[Granola] LLM summary generated successfully');
+      return result;
     } catch (err) {
-      console.error('Primary LLM failed:', err);
+      console.error('[Granola] Primary LLM failed:', err);
       if (this.fallbackEndpoint && this.fallbackModel) {
         try {
-          return await callLLM(this.fallbackEndpoint, this.fallbackModel);
+          const fallbackResult = await callLLM(this.fallbackEndpoint, this.fallbackModel);
+          console.log('[Granola] Fallback LLM summary generated successfully');
+          return fallbackResult;
         } catch (fallbackErr) {
-          console.error('Fallback LLM also failed:', fallbackErr);
+          console.error('[Granola] Fallback LLM also failed:', fallbackErr);
         }
       }
       // If all fail, return empty
+      console.log('[Granola] All LLM attempts failed, returning empty summary');
       return { summary: '', actionItems: '', followupEmail: '' };
     }
   }

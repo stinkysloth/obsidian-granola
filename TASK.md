@@ -19,3 +19,5 @@
 - [x] Fix import order in AIGenerator.ts (2025-04-17)
 - [x] Implement proper module bundling with esbuild to fix module resolution errors (2025-04-17)
 - [x] Implement clean build process to prevent conflicts between compiled files (2025-04-17)
+- [x] Implement audio recording interface (meeting capture) (2025-04-17)
+- [x] Add toggle hotkey for meeting start/stop (2025-04-17)

@@ -11,7 +11,7 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "typeRoots": ["./node_modules/@types", "./types"],
-    "types": ["node"],
+    "types": ["node", "jest"],
     "lib": ["DOM", "ES2020"]
   },
   "include": ["*.ts", "tests/**/*.ts"],

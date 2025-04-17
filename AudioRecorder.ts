@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, spawn, ChildProcess } from 'child_process';
 import { GranolaSettings, DEFAULT_SETTINGS } from './GranolaSettings';
 
 /**
@@ -11,7 +11,7 @@ export class AudioRecorder {
   /** Path to system audio file. */
   systemFilePath: string;
   /** ffmpeg process instance. */
-  process: any;
+  process: ChildProcess | null;
   /** Plugin settings. */
   settings: GranolaSettings;
 
@@ -20,6 +20,7 @@ export class AudioRecorder {
     this.systemFilePath = '';
     this.process = null;
     this.settings = settings || DEFAULT_SETTINGS;
+    console.log('[Granola] AudioRecorder constructed', { settings: this.settings });
   }
 
   /**
@@ -34,24 +35,73 @@ export class AudioRecorder {
   async startRecording(micDevice: string, systemDevice: string, basePath: string) {
     this.micFilePath = `${basePath}_mic.wav`;
     this.systemFilePath = `${basePath}_system.wav`;
-    // If dual-track is enabled, record both mic and system audio
-    if (this.settings.enableDualTrack && systemDevice) {
-      // TODO: Implement dual-track ffmpeg command using micDevice and systemDevice
-      // Example placeholder:
-      // this.process = exec(`ffmpeg -f avfoundation -i \\"${micDevice}:none\\" -f avfoundation -i \\"none:${systemDevice}\\" -filter_complex "[0:a][1:a]amerge=inputs=2[aout]" -map "[aout]" ${basePath}_merged.wav`);
-    } else {
-      // Only record mic
-      // TODO: Implement single-track ffmpeg command
-      // this.process = exec(`ffmpeg -f avfoundation -i \\"${micDevice}\\" ${this.micFilePath}`);
+    console.log('[Granola] startRecording called', { micDevice, systemDevice, basePath });
+    // Ensure output directory exists
+    const fs = require('fs');
+    const path = require('path');
+    const outDir = path.dirname(this.micFilePath);
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir, { recursive: true });
+      console.log('[Granola] Created audio output directory:', outDir);
     }
-    // See README for setup instructions
+    // Build ffmpeg command
+    if (this.settings.enableDualTrack && systemDevice) {
+      // Dual-track: record mic and system audio separately
+      const ffmpegArgs = [
+        '-y',
+        '-f', 'avfoundation',
+        '-i', `${micDevice}:none`,
+        '-f', 'avfoundation',
+        '-i', `none:${systemDevice}`,
+        '-map', '0:a', this.micFilePath,
+        '-map', '1:a', this.systemFilePath
+      ];
+      console.log('[Granola] Starting dual-track ffmpeg:', 'ffmpeg', ffmpegArgs.join(' '));
+      this.process = spawn('ffmpeg', ffmpegArgs);
+    } else {
+      // Single-track: record only mic
+      const ffmpegArgs = [
+        '-y',
+        '-f', 'avfoundation',
+        '-i', micDevice,
+        this.micFilePath
+      ];
+      console.log('[Granola] Starting single-track ffmpeg:', 'ffmpeg', ffmpegArgs.join(' '));
+      this.process = spawn('ffmpeg', ffmpegArgs);
+    }
+    // Log ffmpeg output for debugging
+    if (this.process) {
+      if (this.process.stdout) {
+        this.process.stdout.on('data', (data: Buffer) => {
+          console.log(`[Granola] ffmpeg stdout: ${data}`);
+        });
+      }
+      if (this.process.stderr) {
+        this.process.stderr.on('data', (data: Buffer) => {
+          console.log(`[Granola] ffmpeg stderr: ${data}`);
+        });
+      }
+      this.process.on('error', (err: Error) => {
+        console.error('[Granola] ffmpeg process error:', err);
+      });
+      this.process.on('exit', (code: number, signal: string) => {
+        console.log(`[Granola] ffmpeg exited with code ${code}, signal ${signal}`);
+      });
+    } else {
+      throw new Error('Failed to start ffmpeg process');
+    }
   }
 
   /**
    * Stop recording audio.
    */
   async stopRecording() {
-    // TODO: Stop ffmpeg process and finalize files
-    // if (this.process) this.process.kill();
+    if (this.process) {
+      this.process.kill('SIGINT');
+      console.log('[Granola] stopRecording called, ffmpeg process killed');
+      this.process = null;
+    } else {
+      console.warn('[Granola] stopRecording called, but no ffmpeg process was running');
+    }
   }
 }

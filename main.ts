@@ -16,17 +16,33 @@ export default class GranolaNotesPlugin extends Plugin {
   statusBarEl: HTMLElement | null = null;
 
   async onload() {
+    console.log('[Granola] Plugin loading...');
     // Load settings
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    console.log('[Granola] Settings loaded:', this.settings);
 
     // Register settings tab
     this.addSettingTab(new GranolaSettingsTab(this.app, this));
+    console.log('[Granola] Settings tab registered');
 
-    // Register core command: Start New Meeting
+    // Register core command: Start/Stop Meeting (toggle)
     this.addCommand({
-      id: 'granola-start-meeting',
-      name: 'Granola: Start New Meeting',
+      id: 'granola-toggle-meeting',
+      name: 'Granola: Start/Stop Meeting (Toggle)',
       callback: async () => {
+        // If a session is active, stop it
+        if (this.session) {
+          try {
+            await this.session.end(this.settings.whisperLanguage || 'en');
+            new Notice('Granola: Meeting session stopped');
+            this.showStatusBar('Meeting stopped');
+          } catch (err) {
+            console.error('[Granola] Error stopping meeting session:', err);
+            new Notice('Granola: Failed to stop meeting session.');
+          }
+          this.session = null;
+          return;
+        }
         // --- 1. Get Templates List ---
         const templatesFolder = this.settings.templateFolder;
         let templates: string[] = [];
@@ -36,7 +52,7 @@ export default class GranolaNotesPlugin extends Plugin {
             templates = folder.children.filter((f) => f instanceof TFile).map((f) => (f as TFile).basename);
           }
         } catch (e) {
-          // fallback: single default
+          console.warn('[Granola] Error loading templates folder:', e);
           templates = ['default'];
         }
         if (templates.length === 0) templates = ['default'];
@@ -58,15 +74,22 @@ export default class GranolaNotesPlugin extends Plugin {
 
           // Start new session (pass app context for note creation)
           this.session = new MeetingSession(audioRecorder, transcriber, aiGenerator, this.app, this.settings);
-          await this.session.start(
-            title,
-            template,
-            micDevice || this.settings.defaultMicDevice,
-            systemDevice || this.settings.defaultSystemDevice,
-            basePath
-          );
-          new Notice('Granola: Meeting session started');
-          this.showStatusBar('Meeting in progress...');
+          try {
+            await this.session.start(
+              title,
+              template,
+              micDevice || this.settings.defaultMicDevice,
+              systemDevice || this.settings.defaultSystemDevice,
+              basePath
+            );
+            console.log('[Granola] Meeting session started:', { title, template, micDevice, systemDevice, basePath });
+            new Notice('Granola: Meeting session started');
+            this.showStatusBar('Meeting in progress...');
+          } catch (err) {
+            console.error('[Granola] Error starting meeting session:', err);
+            new Notice('Granola: Failed to start meeting session.');
+            this.session = null;
+          }
         }).open();
       },
     });
@@ -74,15 +97,18 @@ export default class GranolaNotesPlugin extends Plugin {
     // Show/hide status bar based on settings
     if (this.settings.showStatusBar) {
       this.showStatusBar('Ready for new meeting');
+      console.log('[Granola] Status bar shown');
     }
 
     // TODO: Register additional commands and event handlers
     console.log('Granola Notes plugin loaded');
+    console.log('[Granola] Plugin loaded successfully');
   }
 
   onunload() {
     this.hideStatusBar();
     console.log('Granola Notes plugin unloaded');
+    console.log('[Granola] Plugin unloaded');
   }
 
   /**
@@ -90,11 +116,14 @@ export default class GranolaNotesPlugin extends Plugin {
    */
   async saveSettings() {
     await this.saveData(this.settings);
+    console.log('[Granola] Settings saved:', this.settings);
     // Update status bar visibility if settings change
     if (this.settings.showStatusBar) {
       this.showStatusBar('Ready for new meeting');
+      console.log('[Granola] Status bar shown after settings save');
     } else {
       this.hideStatusBar();
+      console.log('[Granola] Status bar hidden after settings save');
     }
   }
 
@@ -104,13 +133,16 @@ export default class GranolaNotesPlugin extends Plugin {
   showStatusBar(text: string) {
     if (!this.settings.showStatusBar) {
       this.hideStatusBar();
+      console.log('[Granola] Tried to show status bar but disabled in settings');
       return;
     }
     if (!this.statusBarEl) {
       this.statusBarEl = this.addStatusBarItem();
       this.statusBarEl.classList.add('granola-status-bar');
+      console.log('[Granola] Status bar element created');
     }
     this.statusBarEl.setText(text);
+    console.log('[Granola] Status bar updated:', text);
   }
 
   /**
@@ -120,6 +152,7 @@ export default class GranolaNotesPlugin extends Plugin {
     if (this.statusBarEl) {
       this.statusBarEl.detach();
       this.statusBarEl = null;
+      console.log('[Granola] Status bar element removed');
     }
   }
 }

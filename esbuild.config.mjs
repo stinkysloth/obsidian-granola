@@ -34,7 +34,11 @@ esbuild.build({
   },
   entryPoints: ['main.ts'],
   bundle: true,
-  external: ['obsidian', 'electron', '@codemirror/state', '@codemirror/view'],
+  external: [
+    'obsidian', 'electron', '@codemirror/state', '@codemirror/view',
+    'child_process', 'fs', 'path'
+  ],
+  platform: 'node',
   format: 'cjs',
   target: 'es2020',
   logLevel: 'info',

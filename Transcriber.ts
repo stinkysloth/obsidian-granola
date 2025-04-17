@@ -18,6 +18,7 @@ export class Transcriber {
   constructor(whisperPath: string, modelPath: string) {
     this.whisperPath = whisperPath;
     this.modelPath = modelPath;
+    console.log('[Granola] Transcriber constructed', { whisperPath, modelPath });
   }
 
   /**
@@ -32,6 +33,7 @@ export class Transcriber {
    *   Promise<string>: Transcript text.
    */
   async transcribeFile(audioPath: string, language: string, outputPath: string): Promise<string> {
+    console.log('[Granola] transcribeFile called', { audioPath, language, outputPath });
     // TODO: Run Whisper.cpp as a child process
     // Example: ./main -m models/ggml-base.en.bin -f path/to/audio.wav -otxt -of output.txt
     // TODO: Parse and return transcript
@@ -50,11 +52,13 @@ export class Transcriber {
    *   Promise<string>: Merged transcript with speaker labels.
    */
   async transcribeDualTracks(micPath: string, systemPath: string, language: string): Promise<string> {
+    console.log('[Granola] transcribeDualTracks called', { micPath, systemPath, language });
     // Transcribe each track
     const micTranscript = await this.transcribeFile(micPath, language, micPath + '.txt');
     const systemTranscript = await this.transcribeFile(systemPath, language, systemPath + '.txt');
     // TODO: Merge transcripts, label as 'You:' (mic) and 'Other:' (system)
     // TODO: Align by timestamps if possible, or interleave based on timing
+    console.log('[Granola] Dual-track transcription complete');
     return `You:\n${micTranscript}\nOther:\n${systemTranscript}`;
   }
 }
