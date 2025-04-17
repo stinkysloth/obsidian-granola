@@ -1,0 +1,10 @@
+{
+  "id": "granola-notes",
+  "name": "Granola Notes",
+  "version": "0.1.0",
+  "minAppVersion": "0.15.0",
+  "description": "Local audio capture, transcription, and AI meeting notes for Obsidian.",
+  "author": "",
+  "authorUrl": "",
+  "main": "main.js"
+}
