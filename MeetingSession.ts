@@ -45,6 +45,16 @@ export class MeetingSession {
 
   /**
    * Create a new note from a template, replacing variables.
+   *
+   * If the template is not set, not found, or empty, creates a minimal default note.
+   *
+   * Args:
+   *   title (string): Meeting title.
+   *   template (string): Template name (optional).
+   *   audioPath (string): Path to meeting audio file.
+   *
+   * Returns:
+   *   Promise<string>: Path to the created note.
    */
   async createNoteFromTemplate(title: string, template: string, audioPath: string): Promise<string> {
     if (!this.app || !this.vault) {
@@ -53,21 +63,28 @@ export class MeetingSession {
     }
     const templatesFolder = this.settings.templateFolder || 'granola-templates';
     let templateContent = '';
-    try {
-      const folder = this.vault.getAbstractFileByPath(templatesFolder);
-      if (folder && folder instanceof TFolder) {
-        const file = folder.children.find((f: TAbstractFile) => f instanceof TFile && f.name === `${template}.md`);
-        if (file && file instanceof TFile) {
-          templateContent = await this.vault.read(file);
+    let usedTemplate = false;
+    // Try to load template if provided and non-empty
+    if (template && template.trim() !== '') {
+      try {
+        const folder = this.vault.getAbstractFileByPath(templatesFolder);
+        if (folder && folder instanceof TFolder) {
+          const file = folder.children.find((f: TAbstractFile) => f instanceof TFile && f.name === `${template}.md`);
+          if (file && file instanceof TFile) {
+            templateContent = await this.vault.read(file);
+            usedTemplate = true;
+          }
         }
+        if (!templateContent) {
+          new Notice(`Granola: Template '${template}' not found or empty. Using default note structure.`);
+        }
+      } catch (e) {
+        new Notice(`Granola: Error loading template. Using default note structure.`);
       }
-      if (!templateContent) {
-        templateContent = '# {{title}}\n\n## Notes\n\n## Transcript\n\n## Summary (AI)\n\n## Action Items\n\n## Follow-up Email\n';
-        new Notice(`Granola: Template '${template}' not found. Using default.`);
-      }
-    } catch (e) {
-      templateContent = '# {{title}}\n\n## Notes\n\n## Transcript\n\n## Summary (AI)\n\n## Action Items\n\n## Follow-up Email\n';
-      new Notice(`Granola: Error loading template. Using default.`);
+    }
+    // Fallback to minimal structure if no template used
+    if (!usedTemplate || !templateContent) {
+      templateContent = `# ${title}\n\n- Date: {{date}}\n- Audio: {{audio_file_path}}\n\n## Notes\n\n## Transcript\n\n## Summary (AI)\n\n## Action Items\n\n## Follow-up Email\n`;
     }
     // Replace variables
     const dateStr = (window as any).moment
