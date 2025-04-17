@@ -1,10 +1,17 @@
 # TASK.md – Granola Notes
 
 ## Current Tasks
-- [ ] Scaffold project structure and planning docs (2025-04-16)
+- [ ] Write unit tests for core functionality (2025-04-16)
+- [ ] Create a README.md file with project information (2025-04-16)
+- [ ] Improve AI prompt, add fallback logic, update documentation (2025-04-16)
 
 ## Discovered During Work
-- (none yet)
+- Consider adding a command to insert timestamped notes via command palette
+- Add more robust mock classes for testing type compatibility
+- Review and update tsconfig.json when upgrading TypeScript or Obsidian API versions
 
 ## Completed Tasks
-- (none yet)
+- [x] Scaffold project structure and planning docs (2025-04-16)
+- [x] Improve AI prompt, add fallback logic, update documentation (2025-04-16)
+- [x] Fix TypeScript build configuration for proper module resolution (2025-04-17)
+- [x] Fix import order in AIGenerator.ts (2025-04-17)
