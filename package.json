@@ -4,16 +4,23 @@
   "description": "Obsidian plugin for local meeting audio capture, transcription, and AI summaries.",
   "main": "main.ts",
   "scripts": {
-    "build": "tsc",
-    "test": "jest"
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "devbuild": "node esbuild.config.mjs",
+    "deploy": "npm run build && npm run copy-to-vault",
+    "copy-to-vault": "cp dist/*.js ../.obsidian/plugins/obsidian-granola/ && cp manifest.json ../.obsidian/plugins/obsidian-granola/manifest.json && cp styles.css ../.obsidian/plugins/obsidian-granola/styles.css || true",
+    "test": "vitest"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.17.30",
+    "esbuild": "^0.20.2",
+    "esbuild-plugin-copy": "^2.1.1",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
   },
   "dependencies": {
     "obsidian": "*"

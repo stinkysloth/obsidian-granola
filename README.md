@@ -28,64 +28,39 @@ Granola Notes is an Obsidian plugin for capturing, transcribing, and summarizing
 
 ### 2. Build & Install the Plugin
 
-#### Automated Method (Recommended)
+#### Development Build (Recommended)
 
-1. **Clone and Build:**
+1. **Clone and Install Dependencies:**
    ```sh
    git clone https://github.com/stinkysloth/obsidian-granola
    cd obsidian-granola
    npm install
-   npm run build
-   # This will compile TypeScript and automatically copy manifest.json and styles.css (if present) into dist/
    ```
-   > The following scripts should be in your `package.json` for automation:
-   > ```json
-   > "scripts": {
-   >   "build": "tsc",
-   >   "devbuild": "tsc --outDir ../.obsidian/plugins/obsidian-granola",
-   >   "postbuild": "cp manifest.json dist/ && cp styles.css dist/ || true"
-   > }
-   > ```
 
-2. **Copy Plugin Files:**
-   - Open your Obsidian vault folder.
-   - Go to `.obsidian/plugins/` and create a folder named `granola-notes` (or your preferred name).
-   - Copy **the contents of `dist/`** (not the folder itself) into your plugin folder. You should see:
-     - `main.js`
-     - `manifest.json`
-     - (optional) `styles.css`
+2. **Build Directly to Your Obsidian Plugins Folder:**
+   ```sh
+   npm run dev
+   ```
+   This will bundle the plugin and place it directly in `../.obsidian/plugins/obsidian-granola/`.
 
 3. **Enable the Plugin:**
    - In Obsidian, go to Settings → Community plugins → Installed plugins.
    - Find "Granola Notes" and enable it.
 
-#### Manual Method
+#### Production Build
 
-If you prefer, you can manually copy files after building:
+For a production build:
 
-1. Run:
-   ```sh
-   npm install
-   npm run build
-   cp manifest.json dist/
-   cp styles.css dist/  # Only if you have a styles.css
-   ```
-2. Copy the contents of `dist/` into your Obsidian plugin folder as above.
-
-#### Development Build
-
-For faster development iteration, use:
 ```sh
-npm run devbuild
+npm run build
 ```
-This will compile TypeScript directly into your Obsidian plugins folder, assuming the standard location.
+
+This will create a bundled version in the `dist/` folder that you can distribute.
 
 **Troubleshooting:**
-- Do NOT copy the entire project or the `dist/` folder itself—only its contents.
-- If you update the plugin, repeat the build and copy steps above.
-- If the plugin does not appear, check that `manifest.json` and `main.js` are in the correct folder.
-- Restart Obsidian if changes are not detected.
-- If you encounter TypeScript build errors, check your `tsconfig.json` configuration. This plugin uses ESNext modules with Node module resolution.
+- If you encounter module resolution errors, make sure you're using the bundled build process (esbuild) rather than just TypeScript compilation.
+- The plugin uses a bundled approach to ensure all modules are properly resolved in Obsidian's runtime environment.
+- If you're developing, use `npm run dev` which creates source maps for easier debugging.
 
 ---
 
